@@ -31,3 +31,4 @@ logStore.Info("Hello")
 7. LevelPanic - I'm bailing. Calls panic() after logging
 
 ## Change Log
+2021.12.21 - Removed GORM dependency and moved to the standard library
