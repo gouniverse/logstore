@@ -15,3 +15,16 @@
 # vendor/
 
 test.sqlite
+test_log_store_automigrate.db
+test_log_store_warn_with_context.db
+test_log_store_log.db
+test_log_store_warn.db
+test_log_store_info.db
+test_log_store_info_with_context.db
+test_log_store_debug.db
+test_log_store_trace.db
+test_log_store_trace_with_context.db
+.gitignore
+test_log_store_error_with_context.db
+test_log_store_debug_with_cotext.db
+test_log_store_create.db

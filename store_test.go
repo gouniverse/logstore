@@ -1,22 +1,47 @@
 package logstore
 
 import (
+	"database/sql"
+	"os"
 	"testing"
+	"time"
 
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
+	"github.com/gouniverse/uid"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-func TestWithAutoMigrate(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open("test.sqlite"), &gorm.Config{})
+func InitDB(filepath string) *sql.DB {
+	os.Remove(filepath) // remove database
+	dsn := filepath + "?parseTime=true"
+	db, err := sql.Open("sqlite3", dsn)
+
 	if err != nil {
-		panic("failed to connect database")
+		panic(err)
 	}
-	// TC: 1
+
+	return db
+}
+
+func TestStoreCreate(t *testing.T) {
+	db := InitDB("test_log_store_create.db")
+
+	store, err := NewStore(WithDb(db), WithTableName("log_create"), WithAutoMigrate(true))
+
+	if err != nil {
+		t.Fatalf("Store could not be created: " + err.Error())
+	}
+
+	if store == nil {
+		t.Fatalf("Store could not be created")
+	}
+}
+
+func TestWithAutoMigrate(t *testing.T) {
+	db := InitDB("test_log_store_automigrate.db")
 
 	// Initializes automigrateEnabled to False
 	s := Store{
-		logTableName:       "LogTable",
+		logTableName:       "log_with_automigrate_false",
 		db:                 db,
 		automigrateEnabled: false,
 	}
@@ -30,11 +55,9 @@ func TestWithAutoMigrate(t *testing.T) {
 		t.Fatalf("automigrateEnabled: Expected [true] received [%v]", s.automigrateEnabled)
 	}
 
-	// TC: 2
-
 	// Initializes automigrateEnabled to True
 	s = Store{
-		logTableName:       "LogTable",
+		logTableName:       "log_with_automigrate_true",
 		db:                 db,
 		automigrateEnabled: true,
 	}
@@ -49,37 +72,17 @@ func TestWithAutoMigrate(t *testing.T) {
 	}
 }
 
-func TestWithDriverAndDNS(t *testing.T) {
+func TestWithDb(t *testing.T) {
+	db := InitDB("test_log_store_with_automigrate.db")
+
 	s := Store{
 		logTableName:       "LogTable",
 		db:                 nil,
 		automigrateEnabled: false,
 	}
 
-	// db is initialized to nil
-	f := WithDriverAndDNS("test.sqlite", "test.sqlite")
-	// DB has to be initialized now
-	f(&s)
+	f := WithDb(db)
 
-	// db non Nil expected
-	if s.db == nil {
-		t.Fatalf("db initialization failed")
-	}
-}
-
-func TestWithGormDb(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open("test.sqlite"), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
-	// db is initialized to nil
-	s := Store{
-		logTableName:       "LogTable",
-		db:                 nil,
-		automigrateEnabled: false,
-	}
-
-	f := WithGormDb(db)
 	// DB has to be initialized now
 	f(&s)
 
@@ -112,288 +115,231 @@ func TestWithTableName(t *testing.T) {
 }
 
 func Test_Store_AutoMigrate(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open("test.sqlite"), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
-	// TC: 1
+	db := InitDB("test_log_store_automigrate.db")
 
 	// Initializes automigrateEnabled to False
-	s := Store{
-		logTableName:       "LogTable",
-		db:                 db,
-		automigrateEnabled: true,
+	s, err := NewStore(WithDb(db), WithTableName("log_with_automigrate"))
+
+	if err != nil {
+		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	s.AutoMigrate()
+	errAutomigrate := s.AutoMigrate()
+
+	if errAutomigrate != nil {
+		t.Fatalf("Store could not be automigrated: " + errAutomigrate.Error())
+	}
 }
 
 func Test_Store_Log(t *testing.T) {
-	log := Log{
-		ID:      "test.sqlite",
-		Level:   "test.sqlite",
-		Message: "test.sqlite",
-		Context: "test.sqlite",
-		Time:    nil,
-	}
+	db := InitDB("test_log_store_log.db")
 
-	db, err := gorm.Open(sqlite.Open("test.sqlite"), &gorm.Config{})
+	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+
 	if err != nil {
-		panic("failed to connect database")
-	}
-	// TC: 1
-
-	// Initializes automigrateEnabled to False
-	s := Store{
-		logTableName:       "LogTable",
-		db:                 db,
-		automigrateEnabled: true,
+		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b := s.Log(&log)
+	time := time.Now()
+	log := Log{
+		ID:      uid.HumanUid(),
+		Level:   LevelDebug,
+		Message: "Test Message",
+		Context: "Test Context",
+		Time:    &time,
+	}
+
+	b, _ := s.Log(&log)
 	if b != true {
 		t.Fatalf("Expected [true] received [%v]", b)
 	}
 }
 
 func Test_Store_Debug(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open("test.sqlite"), &gorm.Config{})
+	db := InitDB("test_log_store_debug.db")
+
+	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+
 	if err != nil {
-		panic("failed to connect database")
-	}
-	// TC: 1
-
-	// Initializes automigrateEnabled to False
-	s := Store{
-		logTableName:       "LogTable",
-		db:                 db,
-		automigrateEnabled: true,
+		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b := s.Debug("debug")
+	b, _ := s.Debug("debug")
 	if b != true {
 		t.Fatalf("Expected [true] received [%v]", b)
 	}
 }
 
 func Test_Store_DebugWithContext(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open("test.sqlite"), &gorm.Config{})
+	db := InitDB("test_log_store_debug_with_cotext.db")
+
+	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+
 	if err != nil {
-		panic("failed to connect database")
-	}
-	// TC: 1
-
-	// Initializes automigrateEnabled to False
-	s := Store{
-		logTableName:       "LogTable",
-		db:                 db,
-		automigrateEnabled: true,
+		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b := s.DebugWithContext("debug", "Debug Message")
+	b, _ := s.DebugWithContext("debug", "Debug Message")
 	if b != true {
 		t.Fatalf("Expected [true] received [%v]", b)
 	}
 }
 
 func Test_Store_Error(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open("test.sqlite"), &gorm.Config{})
+	db := InitDB("test_log_store_log.db")
+
+	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+
 	if err != nil {
-		panic("failed to connect database")
-	}
-	// TC: 1
-
-	// Initializes automigrateEnabled to False
-	s := Store{
-		logTableName:       "LogTable",
-		db:                 db,
-		automigrateEnabled: true,
+		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b := s.Error("error")
+	b, _ := s.Error("error")
 	if b != true {
 		t.Fatalf("Expected [true] received [%v]", b)
 	}
 }
 
 func Test_Store_ErrorWithContext(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open("test.sqlite"), &gorm.Config{})
+	db := InitDB("test_log_store_error_with_context.db")
+
+	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+
 	if err != nil {
-		panic("failed to connect database")
-	}
-	// TC: 1
-
-	// Initializes automigrateEnabled to False
-	s := Store{
-		logTableName:       "LogTable",
-		db:                 db,
-		automigrateEnabled: true,
+		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b := s.ErrorWithContext("error", "Error Message")
+	b, _ := s.ErrorWithContext("error", "Error Message")
 	if b != true {
 		t.Fatalf("Expected [true] received [%v]", b)
 	}
 }
 
 // Fatal methods uses system level API to terminate program (os.Exit)
-/*
 func Test_Store_Fatal(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open("test.sqlite"), &gorm.Config{})
+	db := InitDB("test_log_store_log.db")
+
+	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+
 	if err != nil {
-		panic("failed to connect database")
-	}
-	// TC: 1
-
-	// Initializes automigrateEnabled to False
-	s := Store{
-		logTableName:       "LogTable",
-		db:                 db,
-		automigrateEnabled: true,
+		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b := s.Fatal("fatal")
+	b, _ := s.Fatal("fatal")
 	if b != true {
 		t.Fatalf("Expected [true] received [%v]", b)
 	}
 }
 
 func Test_Store_FatalWithContext(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open("test.sqlite"), &gorm.Config{})
+	db := InitDB("test_log_store_log.db")
+
+	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+
 	if err != nil {
-		panic("failed to connect database")
-	}
-	// TC: 1
-
-	// Initializes automigrateEnabled to False
-	s := Store{
-		logTableName:       "LogTable",
-		db:                 db,
-		automigrateEnabled: true,
+		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b := s.FatalWithContext("fatal", "Fatal Message")
+	b, _ := s.FatalWithContext("fatal", "Fatal Message")
 	if b != true {
 		t.Fatalf("Expected [true] received [%v]", b)
 	}
 }
-*/
 
 func Test_Store_Info(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open("test.sqlite"), &gorm.Config{})
+	db := InitDB("test_log_store_info.db")
+
+	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+
 	if err != nil {
-		panic("failed to connect database")
-	}
-	// TC: 1
-
-	// Initializes automigrateEnabled to False
-	s := Store{
-		logTableName:       "LogTable",
-		db:                 db,
-		automigrateEnabled: true,
+		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b := s.Info("Info")
+	b, _ := s.Info("Info")
 	if b != true {
 		t.Fatalf("Expected [true] received [%v]", b)
 	}
 }
 
 func Test_Store_InfoWithContext(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open("test.sqlite"), &gorm.Config{})
+	db := InitDB("test_log_store_info_with_context.db")
+
+	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+
 	if err != nil {
-		panic("failed to connect database")
-	}
-	// TC: 1
-
-	// Initializes automigrateEnabled to False
-	s := Store{
-		logTableName:       "LogTable",
-		db:                 db,
-		automigrateEnabled: true,
+		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b := s.InfoWithContext("Info", "Info Message")
+	b, _ := s.InfoWithContext("Info", "Info Message")
 	if b != true {
 		t.Fatalf("Expected [true] received [%v]", b)
 	}
 }
 
 func Test_Store_Trace(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open("test.sqlite"), &gorm.Config{})
+	db := InitDB("test_log_store_trace.db")
+
+	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+
 	if err != nil {
-		panic("failed to connect database")
-	}
-	// TC: 1
-
-	// Initializes automigrateEnabled to False
-	s := Store{
-		logTableName:       "LogTable",
-		db:                 db,
-		automigrateEnabled: true,
+		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b := s.Trace("trace")
+	b, _ := s.Trace("trace")
 	if b != true {
 		t.Fatalf("Expected [true] received [%v]", b)
 	}
 }
 
 func Test_Store_TraceWithContext(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open("test.sqlite"), &gorm.Config{})
+	db := InitDB("test_log_store_trace_with_context.db")
+
+	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+
 	if err != nil {
-		panic("failed to connect database")
-	}
-	// TC: 1
-
-	// Initializes automigrateEnabled to False
-	s := Store{
-		logTableName:       "LogTable",
-		db:                 db,
-		automigrateEnabled: true,
+		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b := s.TraceWithContext("trace", "Trace Message")
+	b, err := s.TraceWithContext("trace", "Trace Message")
+	if err != nil {
+		t.Fatalf("Expected [nil] received [%v]", err.Error())
+	}
 	if b != true {
 		t.Fatalf("Expected [true] received [%v]", b)
 	}
 }
 
 func Test_Store_Warn(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open("test.sqlite"), &gorm.Config{})
+	db := InitDB("test_log_store_warn.db")
+
+	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+
 	if err != nil {
-		panic("failed to connect database")
-	}
-	// TC: 1
-
-	// Initializes automigrateEnabled to False
-	s := Store{
-		logTableName:       "LogTable",
-		db:                 db,
-		automigrateEnabled: true,
+		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b := s.Warn("warn")
+	b, err := s.Warn("warn")
+	if err != nil {
+		t.Fatalf("Expected [nil] received [%v]", err.Error())
+	}
 	if b != true {
 		t.Fatalf("Expected [true] received [%v]", b)
 	}
 }
 
 func Test_Store_WarnWithContext(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open("test.sqlite"), &gorm.Config{})
+	db := InitDB("test_log_store_warn_with_context.db")
+
+	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+
 	if err != nil {
-		panic("failed to connect database")
-	}
-	// TC: 1
-
-	// Initializes automigrateEnabled to False
-	s := Store{
-		logTableName:       "LogTable",
-		db:                 db,
-		automigrateEnabled: true,
+		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b := s.WarnWithContext("warn", "Warning Message")
+	b, err := s.WarnWithContext("warn", "Warning Message")
+	if err != nil {
+		t.Fatalf("Expected [nil] received [%v]", err.Error())
+	}
 	if b != true {
 		t.Fatalf("Expected [true] received [%v]", b)
 	}
