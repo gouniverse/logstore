@@ -1,4 +1,4 @@
-module logstore
+module github.com/gouniverse/logstore
 
 go 1.14
 
