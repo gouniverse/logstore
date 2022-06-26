@@ -35,6 +35,8 @@ logStore.Info("Hello")
 7. LevelPanic - I'm bailing. Calls panic() after logging
 
 ## Change Log
+2022.06.26 - Updated dependencies
+
 2021.12.21 - Added LICENSE
 
 2021.12.21 - Added test badge
