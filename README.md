@@ -14,7 +14,15 @@ go get -u github.com/gouniverse/logstore
 ## Setup
 
 ```
-logStore = logstore.NewStore(logstore.WithDb(databaseInstance), logstore.WithTableName("log_meta"), logstore.WithAutoMigrate(true))
+logStore, err = logstore.NewStore(logstore.NewStoreOptions{
+    DB: databaseInstance,
+    LogTableName: "log",
+    AutomigrateEnabled: true,
+})
+
+if err != nil {
+    panic(error.Error())
+}
 ```
 
 ## Usage
@@ -35,6 +43,8 @@ logStore.Info("Hello")
 7. LevelPanic - I'm bailing. Calls panic() after logging
 
 ## Change Log
+2023.07.19 - Updated instance creation to use options struct
+
 2022.06.26 - Updated dependencies
 
 2021.12.21 - Added LICENSE

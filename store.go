@@ -23,59 +23,38 @@ type Store struct {
 	db                 *sql.DB
 	dbDriverName       string
 	automigrateEnabled bool
-	debug              bool
+	debugEnabled       bool
 }
 
-// StoreOption options for the cache store
-type StoreOption func(*Store)
-
-// WithAutoMigrate sets the table name for the cache store
-func WithAutoMigrate(automigrateEnabled bool) StoreOption {
-	return func(s *Store) {
-		s.automigrateEnabled = automigrateEnabled
-	}
+// NewStoreOptions define the options for creating a new session store
+type NewStoreOptions struct {
+	LogTableName       string
+	DB                 *sql.DB
+	DbDriverName       string
+	AutomigrateEnabled bool
+	DebugEnabled       bool
 }
 
-// WithDb sets the database for the setting store
-func WithDb(db *sql.DB) StoreOption {
-	return func(s *Store) {
-		s.db = db
-		s.dbDriverName = s.DriverName(s.db)
-	}
-}
-
-// WithDebug prints the SQL queries
-func WithDebug(debug bool) StoreOption {
-	return func(s *Store) {
-		s.debug = debug
-	}
-}
-
-// WithTableName sets the table name for the cache store
-func WithTableName(logTableName string) StoreOption {
-	return func(s *Store) {
-		s.logTableName = logTableName
-	}
-}
-
-// NewStore creates a new entity store
-func NewStore(opts ...StoreOption) (*Store, error) {
-	store := &Store{}
-
-	for _, opt := range opts {
-		opt(store)
-	}
-
-	if store.db == nil {
-		return nil, errors.New("log store: db is required")
-	}
-
-	if store.dbDriverName == "" {
-		return nil, errors.New("log store: dbDriverName is required")
+// NewStore creates a new session store
+func NewStore(opts NewStoreOptions) (*Store, error) {
+	store := &Store{
+		logTableName:       opts.LogTableName,
+		automigrateEnabled: opts.AutomigrateEnabled,
+		db:                 opts.DB,
+		dbDriverName:       opts.DbDriverName,
+		debugEnabled:       opts.DebugEnabled,
 	}
 
 	if store.logTableName == "" {
 		return nil, errors.New("log store: logTableName is required")
+	}
+
+	if store.db == nil {
+		return nil, errors.New("log store: DB is required")
+	}
+
+	if store.dbDriverName == "" {
+		store.dbDriverName = store.DriverName(store.db)
 	}
 
 	if store.automigrateEnabled {
@@ -85,11 +64,70 @@ func NewStore(opts ...StoreOption) (*Store, error) {
 	return store, nil
 }
 
+// StoreOption options for the cache store
+// type StoreOption func(*Store)
+
+// // WithAutoMigrate sets the table name for the cache store
+// func WithAutoMigrate(automigrateEnabled bool) StoreOption {
+// 	return func(s *Store) {
+// 		s.automigrateEnabled = automigrateEnabled
+// 	}
+// }
+
+// // WithDb sets the database for the setting store
+// func WithDb(db *sql.DB) StoreOption {
+// 	return func(s *Store) {
+// 		s.db = db
+// 		s.dbDriverName = s.DriverName(s.db)
+// 	}
+// }
+
+// // WithDebug prints the SQL queries
+// func WithDebug(debug bool) StoreOption {
+// 	return func(s *Store) {
+// 		s.debugEnabled = debug
+// 	}
+// }
+
+// // WithTableName sets the table name for the cache store
+// func WithTableName(logTableName string) StoreOption {
+// 	return func(s *Store) {
+// 		s.logTableName = logTableName
+// 	}
+// }
+
+// // NewStore creates a new entity store
+// func NewStore(opts ...StoreOption) (*Store, error) {
+// 	store := &Store{}
+
+// 	for _, opt := range opts {
+// 		opt(store)
+// 	}
+
+// 	if store.db == nil {
+// 		return nil, errors.New("log store: db is required")
+// 	}
+
+// 	if store.dbDriverName == "" {
+// 		return nil, errors.New("log store: dbDriverName is required")
+// 	}
+
+// 	if store.logTableName == "" {
+// 		return nil, errors.New("log store: logTableName is required")
+// 	}
+
+// 	if store.automigrateEnabled {
+// 		store.AutoMigrate()
+// 	}
+
+// 	return store, nil
+// }
+
 // AutoMigrate auto migrate
 func (st *Store) AutoMigrate() error {
 	sql := st.SqlCreateTable()
 
-	if st.debug {
+	if st.debugEnabled {
 		log.Println(sql)
 	}
 
@@ -124,7 +162,7 @@ func (st *Store) DriverName(db *sql.DB) string {
 
 // EnableDebug - enables the debug option
 func (st *Store) EnableDebug(debug bool) {
-	st.debug = debug
+	st.debugEnabled = debug
 }
 
 // Log adds a log
@@ -140,14 +178,14 @@ func (st *Store) Log(logEntry *Log) (bool, error) {
 	var sqlStr string
 	sqlStr, _, _ = goqu.Dialect(st.dbDriverName).Insert(st.logTableName).Rows(logEntry).ToSQL()
 
-	if st.debug {
+	if st.debugEnabled {
 		log.Println(sqlStr)
 	}
 
 	_, err := st.db.Exec(sqlStr)
 
 	if err != nil {
-		if st.debug {
+		if st.debugEnabled {
 			log.Println(err.Error())
 		}
 		return false, err

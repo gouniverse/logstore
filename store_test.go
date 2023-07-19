@@ -25,7 +25,11 @@ func InitDB(filepath string) *sql.DB {
 func TestStoreCreate(t *testing.T) {
 	db := InitDB("test_log_store_create.db")
 
-	store, err := NewStore(WithDb(db), WithTableName("log_create"), WithAutoMigrate(true))
+	store, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		LogTableName:       "log_create",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
@@ -36,89 +40,93 @@ func TestStoreCreate(t *testing.T) {
 	}
 }
 
-func TestWithAutoMigrate(t *testing.T) {
-	db := InitDB("test_log_store_automigrate.db")
+// func TestWithAutoMigrate(t *testing.T) {
+// 	db := InitDB("test_log_store_automigrate.db")
 
-	// Initializes automigrateEnabled to False
-	s := Store{
-		logTableName:       "log_with_automigrate_false",
-		db:                 db,
-		automigrateEnabled: false,
-	}
+// 	// Initializes automigrateEnabled to False
+// 	s := Store{
+// 		logTableName:       "log_with_automigrate_false",
+// 		db:                 db,
+// 		automigrateEnabled: false,
+// 	}
 
-	// Modified to True
-	f := WithAutoMigrate(true)
-	f(&s)
+// 	// Modified to True
+// 	f := WithAutoMigrate(true)
+// 	f(&s)
 
-	// Test Results
-	if s.automigrateEnabled != true {
-		t.Fatalf("automigrateEnabled: Expected [true] received [%v]", s.automigrateEnabled)
-	}
+// 	// Test Results
+// 	if s.automigrateEnabled != true {
+// 		t.Fatalf("automigrateEnabled: Expected [true] received [%v]", s.automigrateEnabled)
+// 	}
 
-	// Initializes automigrateEnabled to True
-	s = Store{
-		logTableName:       "log_with_automigrate_true",
-		db:                 db,
-		automigrateEnabled: true,
-	}
+// 	// Initializes automigrateEnabled to True
+// 	s = Store{
+// 		logTableName:       "log_with_automigrate_true",
+// 		db:                 db,
+// 		automigrateEnabled: true,
+// 	}
 
-	// Modified to True
-	f = WithAutoMigrate(false)
-	f(&s)
+// 	// Modified to True
+// 	f = WithAutoMigrate(false)
+// 	f(&s)
 
-	// Test Results
-	if s.automigrateEnabled == true {
-		t.Fatalf("automigrateEnabled: Expected [true] received [%v]", s.automigrateEnabled)
-	}
-}
+// 	// Test Results
+// 	if s.automigrateEnabled == true {
+// 		t.Fatalf("automigrateEnabled: Expected [true] received [%v]", s.automigrateEnabled)
+// 	}
+// }
 
-func TestWithDb(t *testing.T) {
-	db := InitDB("test_log_store_with_automigrate.db")
+// func TestWithDb(t *testing.T) {
+// 	db := InitDB("test_log_store_with_automigrate.db")
 
-	s := Store{
-		logTableName:       "LogTable",
-		db:                 nil,
-		automigrateEnabled: false,
-	}
+// 	s := Store{
+// 		logTableName:       "LogTable",
+// 		db:                 nil,
+// 		automigrateEnabled: false,
+// 	}
 
-	f := WithDb(db)
+// 	f := WithDb(db)
 
-	// DB has to be initialized now
-	f(&s)
+// 	// DB has to be initialized now
+// 	f(&s)
 
-	// db non Nil expected
-	if s.db == nil {
-		t.Fatalf("db initialization failed")
-	}
-}
+// 	// db non Nil expected
+// 	if s.db == nil {
+// 		t.Fatalf("db initialization failed")
+// 	}
+// }
 
-func TestWithTableName(t *testing.T) {
-	s := Store{
-		logTableName:       "",
-		db:                 nil,
-		automigrateEnabled: false,
-	}
-	// TC: 1
-	table_name := "Table1"
-	f := WithTableName(table_name)
-	f(&s)
-	if s.logTableName != table_name {
-		t.Fatalf("Expected logTableName [%v], received [%v]", table_name, s.logTableName)
-	}
-	// TC: 2
-	table_name = "Table2"
-	f = WithTableName(table_name)
-	f(&s)
-	if s.logTableName != table_name {
-		t.Fatalf("Expected logTableName [%v], received [%v]", table_name, s.logTableName)
-	}
-}
+// func TestWithTableName(t *testing.T) {
+// 	s := Store{
+// 		logTableName:       "",
+// 		db:                 nil,
+// 		automigrateEnabled: false,
+// 	}
+// 	// TC: 1
+// 	table_name := "Table1"
+// 	f := WithTableName(table_name)
+// 	f(&s)
+// 	if s.logTableName != table_name {
+// 		t.Fatalf("Expected logTableName [%v], received [%v]", table_name, s.logTableName)
+// 	}
+// 	// TC: 2
+// 	table_name = "Table2"
+// 	f = WithTableName(table_name)
+// 	f(&s)
+// 	if s.logTableName != table_name {
+// 		t.Fatalf("Expected logTableName [%v], received [%v]", table_name, s.logTableName)
+// 	}
+// }
 
 func Test_Store_AutoMigrate(t *testing.T) {
 	db := InitDB("test_log_store_automigrate.db")
 
 	// Initializes automigrateEnabled to False
-	s, err := NewStore(WithDb(db), WithTableName("log_with_automigrate"))
+	s, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		LogTableName:       "log_with_automigrate",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
@@ -134,7 +142,11 @@ func Test_Store_AutoMigrate(t *testing.T) {
 func Test_Store_Log(t *testing.T) {
 	db := InitDB("test_log_store_log.db")
 
-	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+	s, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		LogTableName:       "log",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
@@ -158,7 +170,11 @@ func Test_Store_Log(t *testing.T) {
 func Test_Store_Debug(t *testing.T) {
 	db := InitDB("test_log_store_debug.db")
 
-	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+	s, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		LogTableName:       "log",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
@@ -173,7 +189,11 @@ func Test_Store_Debug(t *testing.T) {
 func Test_Store_DebugWithContext(t *testing.T) {
 	db := InitDB("test_log_store_debug_with_cotext.db")
 
-	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+	s, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		LogTableName:       "log",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
@@ -188,7 +208,11 @@ func Test_Store_DebugWithContext(t *testing.T) {
 func Test_Store_Error(t *testing.T) {
 	db := InitDB("test_log_store_log.db")
 
-	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+	s, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		LogTableName:       "log",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
@@ -203,7 +227,11 @@ func Test_Store_Error(t *testing.T) {
 func Test_Store_ErrorWithContext(t *testing.T) {
 	db := InitDB("test_log_store_error_with_context.db")
 
-	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+	s, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		LogTableName:       "log",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
@@ -219,7 +247,11 @@ func Test_Store_ErrorWithContext(t *testing.T) {
 func Test_Store_Fatal(t *testing.T) {
 	db := InitDB("test_log_store_log.db")
 
-	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+	s, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		LogTableName:       "log",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
@@ -234,7 +266,11 @@ func Test_Store_Fatal(t *testing.T) {
 func Test_Store_FatalWithContext(t *testing.T) {
 	db := InitDB("test_log_store_log.db")
 
-	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+	s, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		LogTableName:       "log",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
@@ -249,7 +285,11 @@ func Test_Store_FatalWithContext(t *testing.T) {
 func Test_Store_Info(t *testing.T) {
 	db := InitDB("test_log_store_info.db")
 
-	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+	s, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		LogTableName:       "log",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
@@ -264,7 +304,11 @@ func Test_Store_Info(t *testing.T) {
 func Test_Store_InfoWithContext(t *testing.T) {
 	db := InitDB("test_log_store_info_with_context.db")
 
-	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+	s, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		LogTableName:       "log",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
@@ -279,7 +323,11 @@ func Test_Store_InfoWithContext(t *testing.T) {
 func Test_Store_Trace(t *testing.T) {
 	db := InitDB("test_log_store_trace.db")
 
-	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+	s, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		LogTableName:       "log",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
@@ -294,7 +342,11 @@ func Test_Store_Trace(t *testing.T) {
 func Test_Store_TraceWithContext(t *testing.T) {
 	db := InitDB("test_log_store_trace_with_context.db")
 
-	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+	s, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		LogTableName:       "log",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
@@ -312,7 +364,11 @@ func Test_Store_TraceWithContext(t *testing.T) {
 func Test_Store_Warn(t *testing.T) {
 	db := InitDB("test_log_store_warn.db")
 
-	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+	s, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		LogTableName:       "log",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
@@ -330,7 +386,11 @@ func Test_Store_Warn(t *testing.T) {
 func Test_Store_WarnWithContext(t *testing.T) {
 	db := InitDB("test_log_store_warn_with_context.db")
 
-	s, err := NewStore(WithDb(db), WithTableName("log"), WithAutoMigrate(true))
+	s, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		LogTableName:       "log",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
