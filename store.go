@@ -5,15 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
-	"reflect"
-	"strings"
-	"time"
 
 	"github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
 	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
 	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
 	_ "github.com/doug-martin/goqu/v9/dialect/sqlserver"
+	"github.com/golang-module/carbon/v2"
+	"github.com/gouniverse/sb"
 	"github.com/gouniverse/uid"
 )
 
@@ -54,7 +53,7 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 	}
 
 	if store.dbDriverName == "" {
-		store.dbDriverName = store.DriverName(store.db)
+		store.dbDriverName = sb.DatabaseDriverName(store.db)
 	}
 
 	if store.automigrateEnabled {
@@ -63,65 +62,6 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 
 	return store, nil
 }
-
-// StoreOption options for the cache store
-// type StoreOption func(*Store)
-
-// // WithAutoMigrate sets the table name for the cache store
-// func WithAutoMigrate(automigrateEnabled bool) StoreOption {
-// 	return func(s *Store) {
-// 		s.automigrateEnabled = automigrateEnabled
-// 	}
-// }
-
-// // WithDb sets the database for the setting store
-// func WithDb(db *sql.DB) StoreOption {
-// 	return func(s *Store) {
-// 		s.db = db
-// 		s.dbDriverName = s.DriverName(s.db)
-// 	}
-// }
-
-// // WithDebug prints the SQL queries
-// func WithDebug(debug bool) StoreOption {
-// 	return func(s *Store) {
-// 		s.debugEnabled = debug
-// 	}
-// }
-
-// // WithTableName sets the table name for the cache store
-// func WithTableName(logTableName string) StoreOption {
-// 	return func(s *Store) {
-// 		s.logTableName = logTableName
-// 	}
-// }
-
-// // NewStore creates a new entity store
-// func NewStore(opts ...StoreOption) (*Store, error) {
-// 	store := &Store{}
-
-// 	for _, opt := range opts {
-// 		opt(store)
-// 	}
-
-// 	if store.db == nil {
-// 		return nil, errors.New("log store: db is required")
-// 	}
-
-// 	if store.dbDriverName == "" {
-// 		return nil, errors.New("log store: dbDriverName is required")
-// 	}
-
-// 	if store.logTableName == "" {
-// 		return nil, errors.New("log store: logTableName is required")
-// 	}
-
-// 	if store.automigrateEnabled {
-// 		store.AutoMigrate()
-// 	}
-
-// 	return store, nil
-// }
 
 // AutoMigrate auto migrate
 func (st *Store) AutoMigrate() error {
@@ -141,25 +81,6 @@ func (st *Store) AutoMigrate() error {
 	return nil
 }
 
-// DriverName finds the driver name from database
-func (st *Store) DriverName(db *sql.DB) string {
-	dv := reflect.ValueOf(db.Driver())
-	driverFullName := dv.Type().String()
-	if strings.Contains(driverFullName, "mysql") {
-		return "mysql"
-	}
-	if strings.Contains(driverFullName, "postgres") || strings.Contains(driverFullName, "pq") {
-		return "postgres"
-	}
-	if strings.Contains(driverFullName, "sqlite") {
-		return "sqlite"
-	}
-	if strings.Contains(driverFullName, "mssql") {
-		return "mssql"
-	}
-	return driverFullName
-}
-
 // EnableDebug - enables the debug option
 func (st *Store) EnableDebug(debug bool) {
 	st.debugEnabled = debug
@@ -171,18 +92,25 @@ func (st *Store) Log(logEntry *Log) (bool, error) {
 		logEntry.ID = uid.MicroUid()
 	}
 	if logEntry.Time == nil {
-		now := time.Now()
-		logEntry.Time = &now
+		t := carbon.Now(carbon.UTC).StdTime()
+		logEntry.Time = &t
 	}
 
-	var sqlStr string
-	sqlStr, _, _ = goqu.Dialect(st.dbDriverName).Insert(st.logTableName).Rows(logEntry).ToSQL()
+	sqlStr, sqlParams, err := goqu.Dialect(st.dbDriverName).
+		Insert(st.logTableName).
+		Rows(logEntry).
+		Prepared(true).
+		ToSQL()
+
+	if err == nil {
+		log.Println(sqlStr)
+	}
 
 	if st.debugEnabled {
 		log.Println(sqlStr)
 	}
 
-	_, err := st.db.Exec(sqlStr)
+	_, err = st.db.Exec(sqlStr, sqlParams...)
 
 	if err != nil {
 		if st.debugEnabled {
@@ -384,51 +312,4 @@ func (st *Store) WarnWithContext(message string, context interface{}) (bool, err
 		Context: string(contextBytes),
 	}
 	return st.Log(&log)
-}
-
-// SqlCreateTable returns a SQL string for creating the setting table
-func (st *Store) SqlCreateTable() string {
-	sqlMysql := `
-	CREATE TABLE IF NOT EXISTS ` + st.logTableName + ` (
-	  id varchar(40) NOT NULL PRIMARY KEY,
-	  level varchar(40) NOT NULL,
-	  message varchar(510) NOT NULL,
-	  context longtext,
-	  time datetime NOT NULL
-	);
-	`
-
-	sqlPostgres := `
-	CREATE TABLE IF NOT EXISTS "` + st.logTableName + `" (
-	  "id" varchar(40) NOT NULL PRIMARY KEY,
-	  "level" varchar(40) NOT NULL,
-	  "message" varchar(510) NOT NULL,
-	  "context" longtext,
-	  "time" timestamptz(6) NOT NULL
-	)
-	`
-
-	sqlSqlite := `
-	CREATE TABLE IF NOT EXISTS "` + st.logTableName + `" (
-	  "id" varchar(40) NOT NULL PRIMARY KEY,
-	  "level" varchar(40) NOT NULL,
-	  "message" varchar(510) NOT NULL,
-	  "context" longtext,
-	  "time" datetime NOT NULL
-	)
-	`
-
-	sql := "unsupported driver '" + st.dbDriverName + "'"
-
-	if st.dbDriverName == "mysql" {
-		sql = sqlMysql
-	}
-	if st.dbDriverName == "postgres" {
-		sql = sqlPostgres
-	}
-	if st.dbDriverName == "sqlite" {
-		sql = sqlSqlite
-	}
-
-	return sql
 }
