@@ -102,8 +102,9 @@ func (st *Store) Log(logEntry *Log) (bool, error) {
 		Prepared(true).
 		ToSQL()
 
-	if err == nil {
+	if err != nil {
 		log.Println(sqlStr)
+		return false, err
 	}
 
 	if st.debugEnabled {
