@@ -161,9 +161,9 @@ func Test_Store_Log(t *testing.T) {
 		Time:    &time,
 	}
 
-	b, _ := s.Log(&log)
-	if b != true {
-		t.Fatalf("Expected [true] received [%v]", b)
+	err = s.Log(&log)
+	if err != nil {
+		t.Fatal("Unexpected error: ", err.Error())
 	}
 }
 
@@ -180,9 +180,9 @@ func Test_Store_Debug(t *testing.T) {
 		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b, _ := s.Debug("debug")
-	if b != true {
-		t.Fatalf("Expected [true] received [%v]", b)
+	err = s.Debug("debug")
+	if err != nil {
+		t.Fatal("Unexpected error: ", err.Error())
 	}
 }
 
@@ -199,9 +199,9 @@ func Test_Store_DebugWithContext(t *testing.T) {
 		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b, _ := s.DebugWithContext("debug", "Debug Message")
-	if b != true {
-		t.Fatalf("Expected [true] received [%v]", b)
+	err = s.DebugWithContext("debug", "Debug Message")
+	if err != nil {
+		t.Fatal("Unexpected error: ", err.Error())
 	}
 }
 
@@ -218,9 +218,9 @@ func Test_Store_Error(t *testing.T) {
 		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b, _ := s.Error("error")
-	if b != true {
-		t.Fatalf("Expected [true] received [%v]", b)
+	err = s.Error("error")
+	if err != nil {
+		t.Fatal("Unexpected error: ", err.Error())
 	}
 }
 
@@ -237,9 +237,9 @@ func Test_Store_ErrorWithContext(t *testing.T) {
 		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b, _ := s.ErrorWithContext("error", "Error Message")
-	if b != true {
-		t.Fatalf("Expected [true] received [%v]", b)
+	err = s.ErrorWithContext("error", "Error Message")
+	if err != nil {
+		t.Fatal("Unexpected error: ", err.Error())
 	}
 }
 
@@ -257,9 +257,9 @@ func Test_Store_Fatal(t *testing.T) {
 		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b, _ := s.Fatal("fatal")
-	if b != true {
-		t.Fatalf("Expected [true] received [%v]", b)
+	err = s.Fatal("fatal")
+	if err != nil {
+		t.Fatal("Unexpected error: ", err.Error())
 	}
 }
 
@@ -276,9 +276,9 @@ func Test_Store_FatalWithContext(t *testing.T) {
 		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b, _ := s.FatalWithContext("fatal", "Fatal Message")
-	if b != true {
-		t.Fatalf("Expected [true] received [%v]", b)
+	err = s.FatalWithContext("fatal", "Fatal Message")
+	if err != nil {
+		t.Fatal("Unexpected error: ", err.Error())
 	}
 }
 
@@ -295,9 +295,9 @@ func Test_Store_Info(t *testing.T) {
 		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b, _ := s.Info("Info")
-	if b != true {
-		t.Fatalf("Expected [true] received [%v]", b)
+	err = s.Info("Info")
+	if err != nil {
+		t.Fatal("Unexpected error: ", err.Error())
 	}
 }
 
@@ -314,9 +314,9 @@ func Test_Store_InfoWithContext(t *testing.T) {
 		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b, _ := s.InfoWithContext("Info", "Info Message")
-	if b != true {
-		t.Fatalf("Expected [true] received [%v]", b)
+	err = s.InfoWithContext("Info", "Info Message")
+	if err != nil {
+		t.Fatal("Unexpected error: ", err.Error())
 	}
 }
 
@@ -333,9 +333,9 @@ func Test_Store_Trace(t *testing.T) {
 		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b, _ := s.Trace("trace")
-	if b != true {
-		t.Fatalf("Expected [true] received [%v]", b)
+	err = s.Trace("trace")
+	if err != nil {
+		t.Fatal("Unexpected error: ", err.Error())
 	}
 }
 
@@ -352,12 +352,9 @@ func Test_Store_TraceWithContext(t *testing.T) {
 		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b, err := s.TraceWithContext("trace", "Trace Message")
+	err = s.TraceWithContext("trace", "Trace Message")
 	if err != nil {
-		t.Fatalf("Expected [nil] received [%v]", err.Error())
-	}
-	if b != true {
-		t.Fatalf("Expected [true] received [%v]", b)
+		t.Fatal("Unexpected error: ", err.Error())
 	}
 }
 
@@ -374,12 +371,9 @@ func Test_Store_Warn(t *testing.T) {
 		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b, err := s.Warn("warn")
+	err = s.Warn("warn")
 	if err != nil {
-		t.Fatalf("Expected [nil] received [%v]", err.Error())
-	}
-	if b != true {
-		t.Fatalf("Expected [true] received [%v]", b)
+		t.Fatal("Unexpected error: ", err.Error())
 	}
 }
 
@@ -396,11 +390,8 @@ func Test_Store_WarnWithContext(t *testing.T) {
 		t.Fatalf("Store could not be created: " + err.Error())
 	}
 
-	b, err := s.WarnWithContext("warn", "Warning Message")
+	err = s.WarnWithContext("warn", "Warning Message")
 	if err != nil {
-		t.Fatalf("Expected [nil] received [%v]", err.Error())
-	}
-	if b != true {
-		t.Fatalf("Expected [true] received [%v]", b)
+		t.Fatal("Unexpected error: ", err.Error())
 	}
 }

@@ -87,7 +87,7 @@ func (st *Store) EnableDebug(debug bool) {
 }
 
 // Log adds a log
-func (st *Store) Log(logEntry *Log) (bool, error) {
+func (st *Store) Log(logEntry *Log) error {
 	if logEntry.ID == "" {
 		logEntry.ID = uid.MicroUid()
 	}
@@ -103,8 +103,7 @@ func (st *Store) Log(logEntry *Log) (bool, error) {
 		ToSQL()
 
 	if err != nil {
-		log.Println(sqlStr)
-		return false, err
+		return err
 	}
 
 	if st.debugEnabled {
@@ -117,14 +116,14 @@ func (st *Store) Log(logEntry *Log) (bool, error) {
 		if st.debugEnabled {
 			log.Println(err.Error())
 		}
-		return false, err
+		return err
 	}
 
-	return true, nil
+	return nil
 }
 
 // Debug adds a debug log
-func (st *Store) Debug(message string) (bool, error) {
+func (st *Store) Debug(message string) error {
 	log := Log{
 		Level:   LevelDebug,
 		Message: message,
@@ -133,7 +132,7 @@ func (st *Store) Debug(message string) (bool, error) {
 }
 
 // DebugWithContext adds a debug log with context data
-func (st *Store) DebugWithContext(message string, context interface{}) (bool, error) {
+func (st *Store) DebugWithContext(message string, context interface{}) error {
 	contextBytes, err := json.Marshal(context)
 
 	if err != nil {
@@ -150,7 +149,7 @@ func (st *Store) DebugWithContext(message string, context interface{}) (bool, er
 }
 
 // Error adds an error log
-func (st *Store) Error(message string) (bool, error) {
+func (st *Store) Error(message string) error {
 	log := Log{
 		Level:   LevelError,
 		Message: message,
@@ -159,7 +158,7 @@ func (st *Store) Error(message string) (bool, error) {
 }
 
 // ErrorWithContext adds an error log with context data
-func (st *Store) ErrorWithContext(message string, context interface{}) (bool, error) {
+func (st *Store) ErrorWithContext(message string, context interface{}) error {
 	contextBytes, err := json.Marshal(context)
 
 	if err != nil {
@@ -176,19 +175,19 @@ func (st *Store) ErrorWithContext(message string, context interface{}) (bool, er
 }
 
 // Fatal adds an fatal log and calls os.Exit(1) after logging
-func (st *Store) Fatal(message string) (bool, error) {
+func (st *Store) Fatal(message string) error {
 	log := Log{
 		Level:   LevelFatal,
 		Message: message,
 	}
 
-	result, err := st.Log(&log)
+	err := st.Log(&log)
 	// os.Exit(1)
-	return result, err
+	return err
 }
 
 // FatalWithContext adds a fatal log with context data and calls os.Exit(1) after logging
-func (st *Store) FatalWithContext(message string, context interface{}) (bool, error) {
+func (st *Store) FatalWithContext(message string, context interface{}) error {
 	contextBytes, err := json.Marshal(context)
 
 	if err != nil {
@@ -202,13 +201,13 @@ func (st *Store) FatalWithContext(message string, context interface{}) (bool, er
 		Context: string(contextBytes),
 	}
 
-	result, err := st.Log(&log)
+	err = st.Log(&log)
 	// os.Exit(1)
-	return result, err
+	return err
 }
 
 // Info adds an info log
-func (st *Store) Info(message string) (bool, error) {
+func (st *Store) Info(message string) error {
 	log := Log{
 		Level:   LevelInfo,
 		Message: message,
@@ -217,7 +216,7 @@ func (st *Store) Info(message string) (bool, error) {
 }
 
 // InfoWithContext adds an info log with context data
-func (st *Store) InfoWithContext(message string, context interface{}) (bool, error) {
+func (st *Store) InfoWithContext(message string, context interface{}) error {
 	contextBytes, err := json.Marshal(context)
 
 	if err != nil {
@@ -264,16 +263,17 @@ func (st *Store) PanicWithContext(message string, context interface{}) {
 }
 
 // Trace adds a trace log
-func (st *Store) Trace(message string) (bool, error) {
+func (st *Store) Trace(message string) error {
 	log := Log{
 		Level:   LevelTrace,
 		Message: message,
 	}
+
 	return st.Log(&log)
 }
 
 // TraceWithContext adds a trace log with context data
-func (st *Store) TraceWithContext(message string, context interface{}) (bool, error) {
+func (st *Store) TraceWithContext(message string, context interface{}) error {
 	contextBytes, err := json.Marshal(context)
 
 	if err != nil {
@@ -286,20 +286,22 @@ func (st *Store) TraceWithContext(message string, context interface{}) (bool, er
 		Message: message,
 		Context: string(contextBytes),
 	}
+
 	return st.Log(&log)
 }
 
 // Warn adds a warn log
-func (st *Store) Warn(message string) (bool, error) {
+func (st *Store) Warn(message string) error {
 	log := Log{
 		Level:   LevelWarning,
 		Message: message,
 	}
+
 	return st.Log(&log)
 }
 
 // WarnWithContext adds a warn log with context data
-func (st *Store) WarnWithContext(message string, context interface{}) (bool, error) {
+func (st *Store) WarnWithContext(message string, context interface{}) error {
 	contextBytes, err := json.Marshal(context)
 
 	if err != nil {
@@ -312,5 +314,6 @@ func (st *Store) WarnWithContext(message string, context interface{}) (bool, err
 		Message: message,
 		Context: string(contextBytes),
 	}
+
 	return st.Log(&log)
 }
