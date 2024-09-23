@@ -13,7 +13,7 @@ go get -u github.com/gouniverse/logstore
 
 ## Setup
 
-```
+```golang
 logStore, err = logstore.NewStore(logstore.NewStoreOptions{
     DB: databaseInstance,
     LogTableName: "log",
@@ -27,8 +27,23 @@ if err != nil {
 
 ## Usage
 
-```
+```golang
 logStore.Info("Hello")
+
+// with additional context
+logStore.InfoWithContext("Hello", map[string]string{
+    "name": "John Doe"
+})
+```
+
+## Slog
+
+As slog is the now official logger in golang, LogStore provides a SlogHandler.
+
+```golang
+Logger = *slog.New(logstore.NewSlogHandler(&LogStore))
+
+logger.Info("Hello", "name", "John Doe")
 ```
 
 
@@ -43,6 +58,8 @@ logStore.Info("Hello")
 7. LevelPanic - I'm bailing. Calls panic() after logging
 
 ## Change Log
+2024.09.23 - Added a SlogHandler
+
 2023.07.19 - Updated instance creation to use options struct
 
 2022.06.26 - Updated dependencies
