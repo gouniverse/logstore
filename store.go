@@ -17,7 +17,7 @@ import (
 )
 
 // Store defines a session store
-type Store struct {
+type storeImplementation struct {
 	logTableName       string
 	db                 *sql.DB
 	dbDriverName       string
@@ -35,8 +35,8 @@ type NewStoreOptions struct {
 }
 
 // NewStore creates a new session store
-func NewStore(opts NewStoreOptions) (*Store, error) {
-	store := &Store{
+func NewStore(opts NewStoreOptions) (*storeImplementation, error) {
+	store := &storeImplementation{
 		logTableName:       opts.LogTableName,
 		automigrateEnabled: opts.AutomigrateEnabled,
 		db:                 opts.DB,
@@ -64,7 +64,7 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 }
 
 // AutoMigrate auto migrate
-func (st *Store) AutoMigrate() error {
+func (st *storeImplementation) AutoMigrate() error {
 	sql := st.SqlCreateTable()
 
 	if st.debugEnabled {
@@ -82,12 +82,12 @@ func (st *Store) AutoMigrate() error {
 }
 
 // EnableDebug - enables the debug option
-func (st *Store) EnableDebug(debug bool) {
+func (st *storeImplementation) EnableDebug(debug bool) {
 	st.debugEnabled = debug
 }
 
 // Log adds a log
-func (st *Store) Log(logEntry *Log) error {
+func (st *storeImplementation) Log(logEntry *Log) error {
 	if logEntry.ID == "" {
 		logEntry.ID = uid.MicroUid()
 	}
@@ -123,7 +123,7 @@ func (st *Store) Log(logEntry *Log) error {
 }
 
 // Debug adds a debug log
-func (st *Store) Debug(message string) error {
+func (st *storeImplementation) Debug(message string) error {
 	log := Log{
 		Level:   LevelDebug,
 		Message: message,
@@ -132,7 +132,7 @@ func (st *Store) Debug(message string) error {
 }
 
 // DebugWithContext adds a debug log with context data
-func (st *Store) DebugWithContext(message string, context interface{}) error {
+func (st *storeImplementation) DebugWithContext(message string, context interface{}) error {
 	contextBytes, err := json.Marshal(context)
 
 	if err != nil {
@@ -149,7 +149,7 @@ func (st *Store) DebugWithContext(message string, context interface{}) error {
 }
 
 // Error adds an error log
-func (st *Store) Error(message string) error {
+func (st *storeImplementation) Error(message string) error {
 	log := Log{
 		Level:   LevelError,
 		Message: message,
@@ -158,7 +158,7 @@ func (st *Store) Error(message string) error {
 }
 
 // ErrorWithContext adds an error log with context data
-func (st *Store) ErrorWithContext(message string, context interface{}) error {
+func (st *storeImplementation) ErrorWithContext(message string, context interface{}) error {
 	contextBytes, err := json.Marshal(context)
 
 	if err != nil {
@@ -175,7 +175,7 @@ func (st *Store) ErrorWithContext(message string, context interface{}) error {
 }
 
 // Fatal adds an fatal log and calls os.Exit(1) after logging
-func (st *Store) Fatal(message string) error {
+func (st *storeImplementation) Fatal(message string) error {
 	log := Log{
 		Level:   LevelFatal,
 		Message: message,
@@ -187,7 +187,7 @@ func (st *Store) Fatal(message string) error {
 }
 
 // FatalWithContext adds a fatal log with context data and calls os.Exit(1) after logging
-func (st *Store) FatalWithContext(message string, context interface{}) error {
+func (st *storeImplementation) FatalWithContext(message string, context interface{}) error {
 	contextBytes, err := json.Marshal(context)
 
 	if err != nil {
@@ -207,7 +207,7 @@ func (st *Store) FatalWithContext(message string, context interface{}) error {
 }
 
 // Info adds an info log
-func (st *Store) Info(message string) error {
+func (st *storeImplementation) Info(message string) error {
 	log := Log{
 		Level:   LevelInfo,
 		Message: message,
@@ -216,7 +216,7 @@ func (st *Store) Info(message string) error {
 }
 
 // InfoWithContext adds an info log with context data
-func (st *Store) InfoWithContext(message string, context interface{}) error {
+func (st *storeImplementation) InfoWithContext(message string, context interface{}) error {
 	contextBytes, err := json.Marshal(context)
 
 	if err != nil {
@@ -233,7 +233,7 @@ func (st *Store) InfoWithContext(message string, context interface{}) error {
 }
 
 // Panic adds an panic log and calls panic(message) after logging
-func (st *Store) Panic(message string) {
+func (st *storeImplementation) Panic(message string) {
 	log := Log{
 		Level:   LevelPanic,
 		Message: message,
@@ -244,7 +244,7 @@ func (st *Store) Panic(message string) {
 }
 
 // PanicWithContext adds a panic log with context data and calls panic(message) after logging
-func (st *Store) PanicWithContext(message string, context interface{}) {
+func (st *storeImplementation) PanicWithContext(message string, context interface{}) {
 	contextBytes, err := json.Marshal(context)
 
 	if err != nil {
@@ -263,7 +263,7 @@ func (st *Store) PanicWithContext(message string, context interface{}) {
 }
 
 // Trace adds a trace log
-func (st *Store) Trace(message string) error {
+func (st *storeImplementation) Trace(message string) error {
 	log := Log{
 		Level:   LevelTrace,
 		Message: message,
@@ -273,7 +273,7 @@ func (st *Store) Trace(message string) error {
 }
 
 // TraceWithContext adds a trace log with context data
-func (st *Store) TraceWithContext(message string, context interface{}) error {
+func (st *storeImplementation) TraceWithContext(message string, context interface{}) error {
 	contextBytes, err := json.Marshal(context)
 
 	if err != nil {
@@ -291,7 +291,7 @@ func (st *Store) TraceWithContext(message string, context interface{}) error {
 }
 
 // Warn adds a warn log
-func (st *Store) Warn(message string) error {
+func (st *storeImplementation) Warn(message string) error {
 	log := Log{
 		Level:   LevelWarning,
 		Message: message,
@@ -301,7 +301,7 @@ func (st *Store) Warn(message string) error {
 }
 
 // WarnWithContext adds a warn log with context data
-func (st *Store) WarnWithContext(message string, context interface{}) error {
+func (st *storeImplementation) WarnWithContext(message string, context interface{}) error {
 	contextBytes, err := json.Marshal(context)
 
 	if err != nil {

@@ -3,7 +3,7 @@ package logstore
 import "github.com/gouniverse/sb"
 
 // SqlCreateTable returns a SQL string for creating the setting table
-func (store *Store) SqlCreateTable() string {
+func (store *storeImplementation) SqlCreateTable() string {
 	sql := sb.NewBuilder(sb.DatabaseDriverName(store.db)).
 		Table(store.logTableName).
 		Column(sb.Column{

@@ -15,10 +15,10 @@ type SlogHandler struct {
 	slogHandler slog.Handler
 	buffer      *bytes.Buffer
 	mutex       *sync.Mutex
-	logStore    *Store
+	logStore    *storeImplementation
 }
 
-func NewSlogHandler(logStore *Store) *SlogHandler {
+func NewSlogHandler(logStore *storeImplementation) *SlogHandler {
 	return &SlogHandler{
 		slogHandler: slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 			Level: slog.LevelDebug,
